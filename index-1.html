@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free Webinar</title>
+<style>
+:root{--bg:#FDFBF7;--ink:#111;--card:#fff;--line:#e2ddd2;--acc:#0D6118;--mut:#5f6b60;--gold:#F5C400;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0b0b;--ink:#f5f2ea;--card:#161616;--line:#2a2a2a;--acc:#1a8a29;--mut:#a9b0a9}}
+:root[data-theme="dark"]{--bg:#0b0b0b;--ink:#f5f2ea;--card:#161616;--line:#2a2a2a;--acc:#1a8a29;--mut:#a9b0a9}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.4rem;line-height:1.25;margin:0 0 8px}h2{font-size:1.05rem;margin:0 0 6px}
+.tag{display:inline-block;background:var(--gold);color:#111;font-weight:700;font-size:.75rem;padding:3px 10px;border-radius:99px;margin-bottom:12px}
+.meta{color:var(--mut);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.95rem;margin-bottom:10px}
+input,button,a.btn{font:inherit;border-radius:10px;padding:13px;width:100%}
+input{border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:4px}
+button,a.btn{display:block;text-align:center;text-decoration:none;border:0;background:var(--acc);color:#fff;font-weight:700;cursor:pointer}
+a.tg{background:#229ED9;margin-top:10px}
+button:disabled{opacity:.5}
+.cd{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px;text-align:center}
+.cd div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 0}
+.cd b{display:block;font-size:1.6rem;font-variant-numeric:tabular-nums}.cd span{font-size:.7rem;color:var(--mut);text-transform:uppercase}
+.err{color:#c0392b;font-size:.9rem;min-height:1.2em;margin:0 0 8px}
+.video{aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;display:grid;place-items:center;color:#cbd6e0;text-align:center;padding:10px;margin-bottom:12px}
+.video iframe{width:100%;height:100%;border:0}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.offer{animation:pop .5s ease-out;border:2px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:14px;background:var(--card)}
+#log{height:240px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px}
+#log p{margin:0 0 6px;font-size:.95rem;word-break:break-word}.host{color:var(--acc)}
+.row{display:flex;gap:8px}.row input{margin:0}.row button{flex:0 0 90px}
+.hidden{display:none}:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<span class="tag">FREE WEBINAR</span>
+<h1 id="title">Loading…</h1>
+<p class="meta" id="when"></p>
+
+<section id="reg" class="card hidden">
+  <label>Name<input id="name" maxlength="40" autocomplete="name" placeholder="Your name"></label>
+  <label>Email<input id="email" type="email" autocomplete="email" placeholder="you@example.com"></label>
+  <p class="err" id="err" role="alert"></p>
+  <button id="join">Save my seat</button>
+</section>
+
+<section id="wait" class="hidden">
+  <div class="card">
+    <h2 id="hi"></h2>
+    <p class="meta" style="margin:0">Your seat is saved. The webinar starts in:</p>
+    <div class="cd"><div><b id="d">0</b><span>Days</span></div><div><b id="h">0</b><span>Hours</span></div><div><b id="m">0</b><span>Mins</span></div><div><b id="s">0</b><span>Secs</span></div></div>
+  </div>
+  <div class="card">
+    <h2>While you wait</h2>
+    <p class="meta" style="margin:0">Join the Telegram group for updates and to meet other attendees.</p>
+    <a class="btn tg" id="tg" target="_blank" rel="noopener">Join the Telegram group</a>
+  </div>
+</section>
+
+<section id="room" class="hidden">
+  <div class="video" id="video">The stream will start shortly.</div>
+  <div class="offer hidden" id="offer"><h2>Special offer for attendees</h2><p id="offertext"></p><a class="btn" id="offerbtn" target="_blank" rel="noopener"></a></div>
+  <h2>Live chat</h2>
+  <div id="log" aria-live="polite"></div>
+  <div class="row" id="chatrow"><input id="msg" maxlength="200" placeholder="Say something" autocomplete="off"><button id="send">Send</button></div>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+// ===== CONFIG =====
+const SUPABASE_URL="https://ttryrszrvuxwmlksxgip.supabase.co";
+const SUPABASE_KEY="sb_publishable_2t8pOJ9kHMeSJiV8gSwAzw_1e9gq0zp";
+// ==================
+const $=id=>document.getElementById(id);
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let S=null,name=null,vid=null;
+const ls=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){return null}};
+const live=()=>S&&Date.now()>=new Date(S.start_at).getTime();
+
+function embed(u){
+  if(!u)return null;
+  const m=u.match(/(?:v=|youtu\.be\/|live\/|embed\/)([\w-]{11})/);
+  return m?'https://www.youtube.com/embed/'+m[1]+'?autoplay=1&rel=0':u;
+}
+let joined=0;
+function renderOffer(){
+  if(!S)return;
+  const dm=S.offer_delay_minutes||0;
+  let anchor=new Date(S.start_at).getTime();
+  if(S.offer_delay_mode==='join'){joined=joined||Number(ls('wb_join'))||Date.now();ls('wb_join',String(joined));anchor=joined;}
+  const timed=dm>0&&Date.now()>=anchor+dm*60000;
+  $('offer').classList.toggle('hidden',!(S.offer_text&&(S.offer_visible||timed)));
+}
+function render(){
+  if(!S)return;
+  $('title').textContent=S.title;
+  $('when').textContent=new Date(S.start_at).toLocaleString([],{weekday:'long',day:'numeric',month:'long',hour:'numeric',minute:'2-digit'});
+  $('tg').href=S.telegram_url;
+  const registered=!!name;
+  const inRoom=registered&&live();
+  $('reg').classList.toggle('hidden',registered);
+  $('wait').classList.toggle('hidden',!registered||inRoom);
+  $('room').classList.toggle('hidden',!inRoom);
+  if(registered)$('hi').textContent="You're in, "+name+"!";
+  if(inRoom){
+    if(!window._att){window._att=1;const em=ls('wb_email');if(em)db.rpc('mark_attended',{p_email:em});}
+    const src=embed(S.video_url);
+    if(src!==vid){vid=src;const v=$('video');v.textContent='';
+      if(src){const f=document.createElement('iframe');f.src=src;f.allow='autoplay; encrypted-media; picture-in-picture';f.allowFullscreen=true;v.append(f);}
+      else v.textContent='The stream will start shortly.';}
+    renderOffer();
+    $('offertext').textContent=S.offer_text||'';
+    $('offerbtn').textContent=S.offer_button_label||'Get the offer';
+    $('offerbtn').href=S.offer_url||'#';
+    $('chatrow').classList.toggle('hidden',!S.chat_enabled);
+  }
+}
+function tick(){
+  if(!S)return;
+  const left=new Date(S.start_at).getTime()-Date.now();
+  if(left<=0){if(name&&$('room').classList.contains('hidden')){render();loadChat();}else if(name)renderOffer();return;}
+  const t=Math.floor(left/1000);
+  $('d').textContent=Math.floor(t/86400);$('h').textContent=Math.floor(t%86400/3600);
+  $('m').textContent=Math.floor(t%3600/60);$('s').textContent=t%60;
+}
+function addMsg(m){
+  if($('m'+m.id))return;
+  const p=document.createElement('p'),b=document.createElement('b');
+  p.id='m'+m.id;if(m.is_host)p.className='host';
+  b.textContent=m.name+(m.is_host?' (Host)':'')+': ';p.append(b,m.body);
+  $('log').append(p);$('log').scrollTop=1e9;
+}
+let chatLoaded=false;
+async function loadChat(){
+  if(chatLoaded)return;chatLoaded=true;
+  const {data}=await db.from('chat_messages').select('*').order('id',{ascending:false}).limit(100);
+  (data||[]).reverse().forEach(addMsg);
+  db.channel('chat').on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},p=>addMsg(p.new))
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'chat_messages'},p=>{const e=$('m'+p.old.id);if(e)e.remove();}).subscribe();
+}
+async function send(){
+  const body=$('msg').value.trim();if(!body)return;$('msg').value='';
+  await db.from('chat_messages').insert({name,body});
+}
+$('send').onclick=send;$('msg').onkeydown=e=>{if(e.key==='Enter')send();};
+$('join').onclick=async()=>{
+  const n=$('name').value.trim(),email=$('email').value.trim();
+  if(!n){$('err').textContent='Please enter your name.';return;}
+  if(!/^\S+@\S+\.\S+$/.test(email)){$('err').textContent='Please enter a valid email.';return;}
+  $('err').textContent='';$('join').disabled=true;
+  const {error}=await db.from('registrants').insert({name:n,email});
+  if(error&&error.code!=='23505'){$('err').textContent='Could not save your seat. Please try again.';$('join').disabled=false;return;}
+  name=n;ls('wb_name',n);ls('wb_email',email);render();tick();if(live())loadChat();
+};
+(async()=>{
+  name=ls('wb_name');
+  const {data}=await db.from('settings').select('*').eq('id',1).single();
+  S=data;render();tick();if(name&&live())loadChat();
+  db.channel('settings').on('postgres_changes',{event:'UPDATE',schema:'public',table:'settings'},p=>{S=p.new;render();}).subscribe();
+  setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>
