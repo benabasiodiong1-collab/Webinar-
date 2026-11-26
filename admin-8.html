@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Admin</title>
+<style>
+:root{--bg:#f4f1ea;--ink:#111;--card:#fff;--line:#ddd8cc;--acc:#0D6118;--mut:#5f6b60;--gold:#F5C400;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0b0b;--ink:#f5f2ea;--card:#161616;--line:#2a2a2a;--acc:#1a8a29;--mut:#a9b0a9}}
+:root[data-theme="dark"]{--bg:#0b0b0b;--ink:#f5f2ea;--card:#161616;--line:#2a2a2a;--acc:#1a8a29;--mut:#a9b0a9}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17.5px/1.5 system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:1.4rem;margin:0 0 10px}h2{font-size:1.05rem;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
+label{display:block;font-size:.9rem;margin-bottom:10px}
+input,textarea,button,select{font:inherit;border-radius:12px;padding:14px;width:100%}
+input,textarea,select{margin-top:4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:4px}
+button{border:0;background:var(--acc);color:var(--on,#fff);font-weight:700;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--line)}
+button.sm{width:auto;padding:4px 10px;font-size:.8rem}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.meta{color:var(--mut);font-size:.9rem}.stat{font-size:1.8rem;font-weight:700}
+.list{max-height:260px;overflow:auto;font-size:.9rem}
+.list div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:6px 0;word-break:break-word}
+.hidden{display:none}.err{color:#c0392b;min-height:1.2em}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.top{display:flex;align-items:center;gap:12px;padding:8px 0 12px;position:sticky;top:0;background:var(--bg);z-index:5;font-size:1.15rem}
+.menu{width:auto;padding:6px 14px;background:transparent;color:var(--ink);border:1px solid var(--line);font-size:1.2rem}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:78%;max-width:300px;background:var(--card);border-right:1px solid var(--line);transform:translateX(-100%);transition:transform .2s;z-index:20;padding:18px;overflow:auto}
+.drawer.open{transform:none}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15;display:none}.scrim.open{display:block}
+.nav button{background:transparent;color:var(--ink);text-align:left;margin:4px 0;font-weight:500}.nav button.on{background:var(--acc);color:var(--on,#fff);font-weight:700}
+.pane{display:none}.pane.on{display:block}
+</style>
+</head>
+<body>
+<main>
+<h1>Admin dashboard</h1>
+
+<section id="login" class="card">
+  <label>Email<input id="em" type="email" autocomplete="username"></label>
+  <label>Password<input id="pw" type="password" autocomplete="current-password"></label>
+  <p class="err" id="lerr" role="alert"></p>
+  <button id="go">Log in</button>
+</section>
+
+<section id="app" class="hidden">
+  <div class="top"><button class="menu" id="menu" aria-label="Menu">&#9776;</button><b id="ptitle">Overview</b></div>
+  <div class="scrim" id="scrim"></div>
+  <nav class="drawer" id="drawer"><div style="margin-bottom:14px"><b style="color:var(--acc);font-size:1.15rem">Coach Godbless</b><div class="meta">Admin Panel &middot; version 5</div></div><div class="nav" id="nav"></div><button class="alt" id="out" style="margin-top:16px">Log out</button></nav>
+  <div class="pane" id="p_overview">
+  <div class="card"><span class="stat" id="count">0</span> <span class="meta">registered</span>
+    <p class="meta" id="admwarn"></p></div>
+
+  <div class="card">
+    <h2>Funnel stats</h2>
+    <div class="row"><div><span class="stat" id="st_reg">0</span><div class="meta">registered</div></div><div><span class="stat" id="st_watch">0</span><div class="meta">watched</div></div><div><span class="stat" id="st_rate">0%</span><div class="meta">watch rate</div></div></div>
+    <div class="row" style="margin-top:10px"><div><span class="stat" id="st_bought">0</span><div class="meta">bought</div></div><div><span class="stat" id="st_conv">0%</span><div class="meta">conversion</div></div><div></div></div>
+  </div>
+  </div>
+  <div class="pane" id="p_registrants">
+  <div class="card">
+    <h2>Buyers (stops sales emails)</h2>
+    <p class="meta">Paste the emails of people who bought, one per line. They will get no more sales follow-ups.</p>
+    <textarea id="buyers" rows="4" placeholder="email1@gmail.com&#10;email2@gmail.com"></textarea>
+    <button id="markbuyers" style="margin-top:8px">Mark as bought</button>
+    <p class="meta" id="bstat"></p>
+  </div>
+
+  <div class="card">
+    <h2>Registrants</h2>
+    <div class="list" id="regs"></div>
+  </div>
+  </div>
+  <div class="pane" id="p_emails">
+  <div class="card">
+    <h2>Emails</h2>
+    <p class="meta">Edit any email below. You can use {{name}}, {{title}}, {{time}}, {{link}} and {{telegram}}, and they fill in automatically.</p>
+    <div id="emails"></div>
+  </div>
+
+  <div class="card">
+    <h2>Send a campaign</h2>
+    <label>Send to<select id="c_seg"><option value="all">Everyone</option><option value="nowatch">Registered but did not watch</option><option value="watched">Watched but did not buy</option></select></label>
+    <label>Subject<input id="c_subject"></label>
+    <label>Message (use {{name}} for their first name)<textarea id="c_body" rows="6"></textarea></label>
+    <label>Button<select id="c_cta"><option value="none">No button</option><option value="replay">Watch replay button</option><option value="offer">Get access button</option></select></label>
+    <label>When<select id="c_when"><option value="now">Send now</option><option value="later">Schedule for later</option></select></label>
+    <label>Send time (only if scheduled)<input id="c_at" type="datetime-local"></label>
+    <button id="sendcamp">Send campaign</button>
+    <p class="meta" id="cstat"></p>
+    <p class="meta">Campaigns skip people who unsubscribed, and skip buyers once the webinar has started.</p>
+  </div>
+  </div>
+  <div class="pane" id="p_chat">
+  <div class="card">
+    <h2>Live chat</h2>
+    <div class="list" id="chat"></div>
+    <div class="row" style="margin-top:8px"><input id="hmsg" maxlength="200" placeholder="Post as Host" style="margin:0"><button id="hsend" style="flex:0 0 90px">Send</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Chat filter</h2>
+    <label>Blocked words in chat (separate with commas)<textarea id="blocked_words" rows="2"></textarea></label>
+    <button id="savexs2">Save</button>
+    <p class="meta" id="xstat2"></p>
+  </div>
+  </div>
+  <div class="pane" id="p_config">
+  <div class="card">
+    <h2>Page colors</h2>
+    <label>Background<select id="theme_bg"><option value="dark">Dark</option><option value="white">White</option><option value="black">Black</option><option value="green">Deep green</option><option value="blue">Deep blue</option><option value="purple">Deep purple</option></select></label>
+    <label>Accent color (buttons and highlights). Tap a color, or pick any color:</label>
+    <div class="row" id="swatches" style="flex-wrap:wrap;margin-bottom:10px"></div>
+    <input type="color" id="theme_accent" value="#F5C400" style="height:48px;padding:4px">
+    <button id="savetheme" style="margin-top:10px">Save colors</button>
+    <p class="meta" id="thstat"></p>
+  </div>
+
+  <div class="card">
+    <h2>Offer card</h2>
+    <p class="meta">Shown in the live room with your offer. Use only real prices and real slot numbers.</p>
+    <label>Header badge text<input id="offer_badge" placeholder="Limited time opportunity"></label>
+    <label>Price label<input id="offer_price_label" placeholder="Special webinar price"></label>
+    <div class="row"><label>Special price (N)<input id="offer_price" type="number"></label><label>Original price (N)<input id="offer_original" type="number"></label></div>
+    <div class="row"><label>Total slots<input id="slots_total" type="number"></label><label>Slots left<input id="slots_left" type="number"></label></div>
+    <button id="saveoc">Save offer card</button>
+    <p class="meta" id="ocstat"></p>
+  </div>
+
+  <div class="card">
+    <h2>Webinar settings</h2>
+    <label>Title<input id="title"></label>
+    <label>Start date and time (your local time)<input id="start_at" type="datetime-local"></label>
+    <label>Video link (YouTube Live link)<input id="video_url" placeholder="https://youtube.com/live/..."></label>
+    <label>Telegram group link<input id="telegram_url"></label>
+    <label>Replay video link (paste after the webinar)<input id="replay_url" placeholder="https://youtube.com/..."></label>
+    <label><input type="checkbox" id="chat_enabled" style="width:auto;margin-right:8px">Chat on</label>
+    <button id="save">Save settings</button>
+    <p class="meta" id="sstat"></p>
+  </div>
+
+  <div class="card">
+    <h2>Live offer</h2>
+    <label>Offer message<textarea id="offer_text" rows="3"></textarea></label>
+    <div class="row">
+      <label>Button label<input id="offer_button_label"></label>
+      <label>Button link<input id="offer_url" placeholder="https://"></label>
+    </div>
+    <div class="row">
+      <label>Auto-show after (minutes, 0 = manual)<input id="offer_delay_minutes" type="number" min="0" value="0"></label>
+      <label>Count from<select id="offer_delay_mode"><option value="start">Webinar start</option><option value="join">When each person enters</option></select></label>
+    </div>
+    <button id="saveo" style="margin-bottom:8px">Save offer &amp; timing</button>
+    <div class="row"><button id="showo">Show to everyone</button><button id="hideo" class="alt">Hide</button></div>
+    <p class="meta" id="ostat"></p>
+  </div>
+
+  <div class="card">
+    <h2>Landing page</h2>
+    <label>Headline (put *stars* around words to make them gold)<textarea id="hero_title" rows="3"></textarea></label>
+    <label>Sub headline<textarea id="hero_sub" rows="3"></textarea></label>
+    <label>What people will learn (one point per line)<textarea id="about_text" rows="5"></textarea></label>
+    <label>Student testimonials (one per line: Name | what they said)<textarea id="testimonials" rows="6"></textarea></label>
+    <button id="savelp">Save landing page</button>
+    <p class="meta" id="lpstat"></p>
+  </div>
+  </div>
+  <div class="pane" id="p_host">
+  <div class="card">
+    <h2>Host messages</h2>
+    <p class="meta">Messages that appear in the live chat at set times. Use real team members only, not made-up attendees.</p>
+    <div id="hs_list"></div>
+    <button class="alt" id="hs_add" style="margin-top:8px">+ Add message</button>
+    <button id="hs_save" style="margin-top:8px">Save messages</button>
+    <p class="meta" id="hs_stat"></p>
+  </div>
+  </div>
+  <div class="pane" id="p_front">
+  <div class="card">
+    <h2>Front page sections</h2>
+    <p class="meta">Fill these in and they appear on your main page. Empty sections stay hidden. Use only real numbers.</p>
+    <label>Social proof line<input id="proof_text" placeholder="Join 350+ people in this live webinar"></label>
+    <label>Numbers (one per line: Number | Label, up to 3)<textarea id="stats" rows="3" placeholder="300+ | Students trained"></textarea></label>
+    <label>What they will discover (one per line: Tag | Title | Description)<textarea id="curriculum" rows="6"></textarea></label>
+    <label>Who this is built for (one per line)<textarea id="for_list" rows="4"></textarea></label>
+    <label>Who should NOT attend (one per line)<textarea id="not_list" rows="4"></textarea></label>
+    <label>About you: badge<input id="host_badge" placeholder="Certified digital growth mentor"></label>
+    <label>About you: story (one paragraph per line)<textarea id="host_bio" rows="5"></textarea></label>
+    <label>FAQ (one per line: Question | Answer)<textarea id="faq" rows="5"></textarea></label>
+    <button id="savefp">Save front page</button>
+    <p class="meta" id="fpstat"></p>
+  </div>
+  <div class="card">
+    <h2>Testimonial slides</h2>
+    <p class="meta">Upload screenshots of student messages. They slide on your main page.</p>
+    <input type="file" id="timg" accept="image/*" multiple>
+    <div id="tlist" class="row" style="flex-wrap:wrap;margin-top:12px"></div>
+    <p class="meta" id="tstat"></p>
+  </div>
+  </div>
+  <div class="pane" id="p_ads">
+  <div class="card">
+    <h2>Ads tracking</h2>
+    <p class="meta">Add your pixel IDs. The page reports each registration to these platforms.</p>
+    <label>Facebook / Meta Pixel ID<input id="fb_pixel_id"></label>
+    <label>TikTok Pixel ID<input id="tiktok_pixel_id"></label>
+    <label>Google Tag Manager ID (GTM-XXXX)<input id="gtm_id"></label>
+    <label>X (Twitter) Pixel ID<input id="x_pixel_id"></label>
+    <label><input type="checkbox" id="pixels_on" style="width:auto;margin-right:8px">Tracking on (untick to pause all pixels)</label>
+    <p class="meta" id="px_stat"></p>
+    <p class="meta">Events sent: PageView, ViewContent and Lead (when someone registers).</p>
+    <button id="savexs">Save</button>
+    <p class="meta" id="xstat"></p>
+  </div>
+  </div>
+</section>
+</main>
+
+<script>window.addEventListener("error",function(e){var d=document.createElement("div");d.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b00020;color:#fff;padding:10px;font-size:13px";d.textContent="Page error: "+e.message+" (send me a screenshot)";document.body.appendChild(d);});</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+function showErr(m){let b=document.getElementById('errbar');if(!b){b=document.createElement('div');b.id='errbar';b.style.cssText='position:fixed;left:0;right:0;bottom:0;background:#b00020;color:#fff;padding:10px 14px;font-size:.85rem;z-index:99';document.body.append(b);}b.textContent='Page error: '+m;}
+window.addEventListener('error',e=>showErr(e.message));window.addEventListener('unhandledrejection',e=>showErr((e.reason&&e.reason.message)||String(e.reason)));
+const SUPABASE_URL="https://ttryrszrvuxwmlksxgip.supabase.co";
+const SUPABASE_KEY="sb_publishable_2t8pOJ9kHMeSJiV8gSwAzw_1e9gq0zp";
+const $=id=>document.getElementById(id);
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const F=['proof_text','stats','curriculum','for_list','not_list','host_badge','host_bio','faq','fb_pixel_id','tiktok_pixel_id','gtm_id','blocked_words','offer_badge','offer_price_label','offer_price','offer_original','slots_total','slots_left','x_pixel_id','title','video_url','telegram_url','replay_url','offer_text','offer_button_label','offer_url','hero_title','hero_sub','about_text','testimonials'];
+const pad=n=>String(n).padStart(2,'0');
+function toLocal(iso){const d=new Date(iso);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());}
+function row(parent,text,btn){
+  const r=document.createElement('div'),s=document.createElement('span');s.textContent=text;r.append(s);
+  if(btn){const b=document.createElement('button');b.className='alt sm';b.textContent='Delete';b.onclick=btn;r.append(b);}
+  parent.append(r);return r;
+}
+async function loadAll(){
+  const {data:s,error}=await db.from('settings').select('*').eq('id',1).single();
+  if(error||!s){return;}
+  F.forEach(k=>$(k).value=s[k]||'');$('theme_accent').value=s.theme_accent||'#F5C400';applyAdminTheme(s);TI=Array.isArray(s.testimonial_imgs)?s.testimonial_imgs:[];renderTI();$('pixels_on').checked=s.pixels_on!==false;$('px_stat').textContent=(s.pixels_on===false?'Tracking is OFF. ':'Tracking is ON. ')+[s.fb_pixel_id,s.tiktok_pixel_id,s.gtm_id,s.x_pixel_id].filter(Boolean).length+' of 4 pixels set.';
+  if(!HSdirty){HS=Array.isArray(s.host_scripts)&&s.host_scripts.length?s.host_scripts:(s.host_messages||'').split('\n').map(l=>{const k=l.indexOf('|');const m=parseFloat(l.slice(0,k));return k>0&&!isNaN(m)?{t:Math.round(m*60),who:'Coach Godbless',text:l.slice(k+1).trim(),on:true,pin:false}:null;}).filter(Boolean);renderHS();}$('theme_bg').value=s.theme_bg||'dark';
+  $('offer_delay_minutes').value=s.offer_delay_minutes||0;$('offer_delay_mode').value=s.offer_delay_mode||'start';
+  $('start_at').value=toLocal(s.start_at);$('chat_enabled').checked=s.chat_enabled;
+  $('ostat').textContent=s.offer_visible?'Offer is showing to everyone.':'Offer is hidden.';
+  const {data:r,error:e2}=await db.from('registrants').select('name,email,created_at,attended,bought,unsubscribed').order('created_at',{ascending:false});
+  $('admwarn').textContent=e2||!r?'':'';
+  if(r){REGS=r;renderStats();$('count').textContent=r.length;$('regs').textContent='';r.forEach(x=>row($('regs'),x.name+' · '+x.email));}
+  if(!r||!r.length){if(await notAdmin())$('admwarn').textContent='Your email is not yet in the admins table, so registrants and edits are blocked.';}
+  const {data:c}=await db.from('chat_messages').select('*').order('id',{ascending:false}).limit(60);
+  $('chat').textContent='';(c||[]).forEach(m=>row($('chat'),m.name+': '+m.body,async()=>{await db.from('chat_messages').delete().eq('id',m.id);loadAll();}));
+}
+async function notAdmin(){
+  const {data:u}=await db.auth.getUser();
+  const {data}=await db.from('admins').select('email');
+  return !(data&&data.length&&u&&u.user);
+}
+async function patch(o,el,msg){
+  const {data,error}=await db.from('settings').update(o).eq('id',1).select();
+  $(el).textContent=error?'Not saved: '+error.message:(!data||!data.length)?'Not saved: your email is not in the admins table.':msg;
+  if(!error&&data&&data.length)loadAll();
+}
+const UNIT={minutes:1,hours:60,days:1440};
+const el=(t,p,k)=>{const e=Object.assign(document.createElement(t),p||{});if(k)e.append(...k);return e;};
+const cap=x=>el('div',{className:'meta',textContent:x});
+const sel=(opts,val)=>{const s=el('select');for(const [v,l] of opts)s.append(el('option',{value:v,textContent:l}));s.value=val;return s;};
+async function loadEmails(){
+  const {data,error:le}=await db.from('email_templates').select('*');
+  const box=$('emails');box.textContent='';
+  if(le){box.append(el('p',{className:'err',textContent:'Could not load emails: '+le.message}));return;}
+  if(!data||!data.length)box.append(el('p',{className:'err',textContent:'No emails found. The email table may be empty or missing in Supabase.'}));
+  const list=(data||[]).sort((a,b)=>(a.offset_minutes??-1e9)-(b.offset_minutes??-1e9));
+  list.forEach(t=>{
+    const w=el('div');w.style.cssText='border-top:1px solid var(--line);padding-top:12px;margin-top:12px';
+    const o=t.offset_minutes;
+    const mode=o===null?'now':(o<0?'before':'after'),abs=Math.abs(o||0);
+    let u='minutes';if(abs>0&&abs%1440===0)u='days';else if(abs>0&&abs%60===0)u='hours';
+    const num=el('input',{type:'number',min:0,value:abs/UNIT[u]});
+    const unit=sel([['minutes','minutes'],['hours','hours'],['days','days']],u);
+    const when=sel([['now','Right after registering'],['before','Before the webinar starts'],['after','After the webinar starts']],mode);
+    const aud=sel([['all','Everyone registered'],['attended','Only people who watched'],['missed','Only people who missed it']],t.audience);
+    const label=el('input',{value:t.label}),sub=el('input',{value:t.subject}),body=el('textarea',{rows:8,value:t.body});
+    const cb=el('input',{type:'checkbox',checked:t.enabled});cb.style.cssText='width:auto;margin-right:8px';
+    const en=el('label',{},[cb,'Send this email']);
+    const st=el('p',{className:'meta'});
+    const timing=el('div',{className:'row'},[num,unit]);
+    const sync=()=>{timing.style.display=when.value==='now'?'none':'flex';};when.onchange=sync;sync();
+    const save=el('button',{textContent:'Save this email'});
+    save.onclick=async()=>{
+      const n=Math.max(0,parseInt(num.value,10)||0)*UNIT[unit.value];
+      const off=when.value==='now'?null:(when.value==='before'?-n:n);
+      const {data:r,error}=await db.from('email_templates').update({label:label.value,subject:sub.value,body:body.value,offset_minutes:off,audience:aud.value,enabled:cb.checked}).eq('kind',t.kind).select();
+      st.textContent=(error||!r||!r.length)?'Not saved.':'Saved.';
+    };
+    const del=el('button',{className:'alt',textContent:'Delete'});
+    del.onclick=async()=>{if(!confirm('Delete this email?'))return;await db.from('email_templates').delete().eq('kind',t.kind);loadEmails();};
+    w.append(cap('Name (only you see this)'),label,cap('When to send'),when,timing,cap('Who gets it'),aud,cap('Subject'),sub,cap('Message'),body,en,el('div',{className:'row'},[save,del]),st);
+    box.append(w);
+  });
+  const add=el('button',{textContent:'+ Add a new email',className:'alt'});add.style.marginTop='14px';
+  add.onclick=async()=>{const {error:ae}=await db.from('email_templates').insert({kind:'custom_'+Date.now(),label:'New email',subject:'Subject here',body:'Hi {{name}},\n\n',offset_minutes:180,audience:'all',sort:100});if(ae){alert('Could not add: '+ae.message);return;}loadEmails();};
+  box.append(add);
+}
+function start(){document.querySelector('h1').classList.add('hidden');$('login').classList.add('hidden');$('app').classList.remove('hidden');loadAll();loadEmails();
+  db.channel('adm').on('postgres_changes',{event:'*',schema:'public',table:'chat_messages'},loadAll)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'registrants'},loadAll).subscribe();}
+$('go').onclick=async()=>{
+  $('lerr').textContent='';
+  const {error}=await db.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value});
+  if(error)$('lerr').textContent='Login failed. Check your email and password.';else start();
+};
+$('out').onclick=async()=>{await db.auth.signOut();location.reload();};
+const oF=()=>({offer_text:$('offer_text').value,offer_button_label:$('offer_button_label').value,offer_url:$('offer_url').value,offer_delay_minutes:Math.max(0,parseInt($('offer_delay_minutes').value)||0),offer_delay_mode:$('offer_delay_mode').value});
+$('saveo').onclick=()=>patch(oF(),'ostat','Offer and timing saved.');
+$('showo').onclick=()=>patch({...oF(),offer_visible:true},'ostat','Offer is showing to everyone.');
+$('hideo').onclick=()=>patch({offer_visible:false},'ostat','Offer is hidden.');
+$('save').onclick=()=>{
+  const o={chat_enabled:$('chat_enabled').checked,start_at:new Date($('start_at').value).toISOString()};
+  ['title','video_url','telegram_url','replay_url'].forEach(k=>o[k]=$(k).value.trim());
+  patch(o,'sstat','Saved.');
+};
+$('hsend').onclick=async()=>{const b=$('hmsg').value.trim();if(!b)return;$('hmsg').value='';await db.from('chat_messages').insert({name:'Host',body:b,is_host:true});};
+$('savelp').onclick=()=>patch({hero_title:$('hero_title').value,hero_sub:$('hero_sub').value,about_text:$('about_text').value,testimonials:$('testimonials').value},'lpstat','Landing page saved.');
+$('markbuyers').onclick=async()=>{
+  const list=$('buyers').value.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@'));
+  if(!list.length){$('bstat').textContent='Paste at least one email.';return;}
+  const {data,error}=await db.from('registrants').update({bought:true}).or(list.map(e=>'email.ilike.'+e).join(',')).select('email');
+  $('bstat').textContent=error?'Not saved: '+error.message:(data.length+' of '+list.length+' marked as bought. They get no more sales emails.');
+};
+let REGS=[];
+function renderStats(){
+  const n=REGS.length,w=REGS.filter(x=>x.attended).length,b=REGS.filter(x=>x.bought).length;
+  $('st_reg').textContent=n;$('st_watch').textContent=w;$('st_rate').textContent=n?Math.round(w/n*100)+'%':'0%';
+  $('st_bought').textContent=b;$('st_conv').textContent=n?(b/n*100).toFixed(1)+'%':'0%';
+  const live=REGS.filter(x=>!x.unsubscribed),o=$('c_seg').options;
+  o[0].textContent='Everyone ('+live.length+')';
+  o[1].textContent='Registered but did not watch ('+live.filter(x=>!x.attended).length+')';
+  o[2].textContent='Watched but did not buy ('+live.filter(x=>x.attended&&!x.bought).length+')';
+}
+$('sendcamp').onclick=async()=>{
+  const subj=$('c_subject').value.trim(),txt=$('c_body').value.trim();
+  if(!subj||!txt){$('cstat').textContent='Write a subject and a message first.';return;}
+  const seg=$('c_seg').value,cta=$('c_cta').value,start=new Date($('start_at').value).getTime();
+  const at=$('c_when').value==='later'&&$('c_at').value?new Date($('c_at').value).getTime():Date.now();
+  const off=Math.round((at-start)/60000);
+  const body=txt+(cta==='replay'?'\n\n[[Watch the replay|{{replay}}]]':cta==='offer'?'\n\n[[\u{1F381} Unlock Your Special Offer|{{offer}}]]':'');
+  const {error}=await db.from('email_templates').insert({kind:'bc_'+Date.now(),label:'Campaign: '+subj,subject:subj,body,offset_minutes:off,audience:seg==='all'?'all':seg==='nowatch'?'missed':'attended',enabled:true,sort:200});
+  $('cstat').textContent=error?'Not saved: '+error.message:'Campaign queued. It sends within a minute.';
+  if(!error){$('c_subject').value='';$('c_body').value='';loadEmails();}
+};
+const xs=el=>patch({fb_pixel_id:$('fb_pixel_id').value.trim(),tiktok_pixel_id:$('tiktok_pixel_id').value.trim(),gtm_id:$('gtm_id').value.trim(),x_pixel_id:$('x_pixel_id').value.trim(),pixels_on:$('pixels_on').checked,blocked_words:$('blocked_words').value},el,'Saved.');
+$('savexs').onclick=()=>xs('xstat');$('savexs2').onclick=()=>xs('xstat2');
+const PANES=[['overview','Overview'],['registrants','Registrants'],['emails','Email Center'],['chat','Live Chat'],['config','Webinar Config'],['host','Host Messages'],['front','Front Page'],['ads','Ads Tracking']];
+function show(id){
+  document.querySelectorAll('.pane').forEach(p=>{const on=p.id==='p_'+id;p.classList.toggle('on',on);p.style.display=on?'block':'none';});
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===id));
+  $('ptitle').textContent=PANES.find(x=>x[0]===id)[1];
+  $('drawer').classList.remove('open');$('scrim').classList.remove('open');window.scrollTo(0,0);
+}
+PANES.forEach(([id,t])=>{const b=document.createElement('button');b.textContent=t;b.dataset.p=id;b.onclick=()=>show(id);$('nav').append(b);});
+$('menu').onclick=()=>{$('drawer').classList.add('open');$('scrim').classList.add('open');};
+$('scrim').onclick=()=>{$('drawer').classList.remove('open');$('scrim').classList.remove('open');};
+show('overview');
+[['Gold','#F5C400'],['Green','#16a34a'],['Blue','#2563eb'],['Red','#dc2626'],['Purple','#7c3aed'],['Orange','#f97316'],['Pink','#db2777'],['White','#ffffff']].forEach(([n,c])=>{const b=document.createElement('button');b.textContent=n;b.className='sm';b.style.cssText='background:'+c+';color:'+(c==='#ffffff'||c==='#F5C400'||c==='#f97316'?'#111':'#fff')+';border:1px solid #888;margin:2px';b.onclick=()=>{$('theme_accent').value=c;};$('swatches').append(b);});
+$('savetheme').onclick=()=>patch({theme_bg:$('theme_bg').value,theme_accent:$('theme_accent').value},'thstat','Colors saved. Your page updates by itself.');
+let HS=[],HSdirty=false;
+const mmss=t=>Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
+function renderHS(){
+  const box=$('hs_list');box.textContent='';
+  HS.forEach((m,i)=>{
+    const w=document.createElement('div');w.style.cssText='border-top:1px solid var(--line);padding:10px 0';
+    const lab=document.createElement('div');lab.className='meta';
+    const upd=()=>{lab.textContent='Shows at '+mmss(m.t||0)+' after the webinar starts (seconds below)';};upd();
+    const t=Object.assign(document.createElement('input'),{type:'number',min:0,value:m.t||0});t.oninput=()=>{m.t=Math.max(0,parseInt(t.value,10)||0);upd();HSdirty=true;};
+    const who=Object.assign(document.createElement('input'),{value:m.who||'',placeholder:'Speaker, e.g. Coach Godbless'});who.style.marginTop='6px';who.oninput=()=>{m.who=who.value;HSdirty=true;};
+    const tx=Object.assign(document.createElement('textarea'),{rows:3,value:m.text||'',placeholder:'Message'});tx.style.marginTop='6px';tx.oninput=()=>{m.text=tx.value;HSdirty=true;};
+    const mk=(k,l)=>{const c=Object.assign(document.createElement('input'),{type:'checkbox',checked:!!m[k]});c.style.cssText='width:auto;margin-right:6px';c.onchange=()=>{m[k]=c.checked;HSdirty=true;};const lb=document.createElement('label');lb.style.marginTop='6px';lb.append(c,l);return lb;};
+    const del=Object.assign(document.createElement('button'),{textContent:'Delete',className:'alt'});del.onclick=()=>{HS.splice(i,1);HSdirty=true;renderHS();};
+    w.append(lab,t,who,tx,mk('pin','Pin to top of chat'),mk('on','Active'),del);box.append(w);
+  });
+}
+$('hs_add').onclick=()=>{HS.push({t:60,who:'Coach Godbless',text:'',on:true,pin:false});HSdirty=true;renderHS();};
+$('hs_save').onclick=async()=>{await patch({host_scripts:HS},'hs_stat','Saved.');HSdirty=false;};
+$('saveoc').onclick=()=>patch({offer_badge:$('offer_badge').value,offer_price_label:$('offer_price_label').value,offer_price:Number($('offer_price').value)||null,offer_original:Number($('offer_original').value)||null,slots_total:parseInt($('slots_total').value,10)||null,slots_left:$('slots_left').value===''?null:parseInt($('slots_left').value,10)},'ocstat','Saved.');
+const BGS={dark:['#0a0a0a','#f5f2ea','#161616','#2a2a2a','#a3a39b'],white:['#f6f6f4','#111111','#ffffff','#e0e0e0','#555555'],black:['#000000','#ffffff','#0d0d0d','#222222','#999999'],green:['#06150d','#eef7f1','#0c2217','#1d3d2c','#9fb8a9'],blue:['#050d1a','#eef3fb','#0b1a30','#1b3354','#9fb0c8'],purple:['#0e0817','#f4eefb','#1a1129','#33264d','#b3a6c9']};
+function applyAdminTheme(s){
+  const t=BGS[s.theme_bg]||BGS.dark,acc=/^#[0-9a-f]{6}$/i.test(s.theme_accent||'')?s.theme_accent:'#F5C400',r=document.documentElement.style;
+  ['--bg','--ink','--card','--line','--mut'].forEach((k,i)=>r.setProperty(k,t[i]));
+  r.setProperty('--acc',acc);r.setProperty('--gold',acc);
+  const n=parseInt(acc.slice(1),16),L=0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255);
+  r.setProperty('--on',L>150?'#111':'#fff');r.colorScheme=s.theme_bg==='white'?'light':'dark';
+}
+let TI=[];
+function renderTI(){const b=$('tlist');b.textContent='';TI.forEach((u,i)=>{const w=document.createElement('div');w.style.cssText='width:31%;min-width:100px';const im=document.createElement('img');im.src=u;im.style.cssText='width:100%;border-radius:10px;border:1px solid var(--line)';const d=document.createElement('button');d.textContent='Remove';d.className='alt sm';d.style.marginTop='4px';d.onclick=async()=>{TI.splice(i,1);await patch({testimonial_imgs:TI},'tstat','Removed.');renderTI();};w.append(im,d);b.append(w);});}
+async function shrink(file){const im=await createImageBitmap(file);const k=Math.min(1,1000/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,'image/jpeg',0.82));}
+$('timg').onchange=async e=>{
+  $('tstat').textContent='Uploading...';
+  for(const f of e.target.files){const blob=await shrink(f),path='testimonials/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';
+    const {error}=await db.storage.from('site').upload(path,blob,{contentType:'image/jpeg'});
+    if(error){$('tstat').textContent='Upload failed: '+error.message;return;}
+    TI.push(db.storage.from('site').getPublicUrl(path).data.publicUrl);}
+  await patch({testimonial_imgs:TI},'tstat','Uploaded and saved.');renderTI();e.target.value='';
+};
+$('savefp').onclick=()=>{const o={};['proof_text','stats','curriculum','for_list','not_list','host_badge','host_bio','faq'].forEach(k=>o[k]=$(k).value);patch(o,'fpstat','Saved. Refresh your main page to see it.');};
+db.auth.getSession().then(({data})=>{if(data.session)start();});
+</script>
+</body>
+</html>
